@@ -1,0 +1,5 @@
+# used to make REST calls
+requests
+
+# used for telegram integration
+python-telegram-bot
