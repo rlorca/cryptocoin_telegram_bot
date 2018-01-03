@@ -46,7 +46,6 @@ class QuoteBot:
         dp.add_handler(CommandHandler("quote", self.quote, pass_args=True))
         dp.add_handler(CommandHandler("help", self.help))
 
-        dp.
         dp.add_error_handler(self.error)
 
         self.updater.start_polling()
