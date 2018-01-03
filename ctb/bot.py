@@ -1,6 +1,6 @@
 import logging
 
-from telegram.ext import CommandHandler, Updater, MessageHandler
+from telegram.ext import CommandHandler, Updater
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
@@ -45,6 +45,8 @@ class QuoteBot:
         dp.add_handler(CommandHandler("unfollow", self.unfollow, pass_args=True))
         dp.add_handler(CommandHandler("quote", self.quote, pass_args=True))
         dp.add_handler(CommandHandler("help", self.help))
+
+        dp.
         dp.add_error_handler(self.error)
 
         self.updater.start_polling()
@@ -127,5 +129,3 @@ class QuoteBot:
 
         for chat in self.subscriptions.for_symbol(quote.symbol):
             self.updater.bot.send_message(chat_id=chat, text=msg)
-        else:
-            logging.debug("No subscribers for %s", quote.symbol)

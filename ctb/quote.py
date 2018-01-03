@@ -32,7 +32,8 @@ class QuoteLoader:
     def latest(self, symbol):
         return self.latest_quotes.get(symbol.upper(), None)
 
-    def fetch(self):
+    @staticmethod
+    def fetch():
         response = requests.get("https://api.coinmarketcap.com/v1/ticker/")
 
         if response.status_code == 200:
