@@ -6,13 +6,13 @@ RUN useradd -ms /bin/bash cbot
 WORKDIR /home/cbot
 
 # needed to install dependencies
-ADD requirements.txt .
+COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-USER cbot
-
 # our app
 COPY ctb ./ctb
+
+USER cbot
 
 ENTRYPOINT ["python", "-m", "ctb"]
