@@ -1,5 +1,6 @@
 import logging
-from threading import Thread, Event
+from typing import Generator
+
 import requests
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -14,65 +15,37 @@ class Coin(object):
 
     def is_newer(self, other):
 
-        if other:
-            return int(self.last_updated) > int(other.last_updated)
-        else:
-            return True
+        return not other or \
+               int(self.last_updated) > int(other.last_updated)
 
+class QuoteService:
 
-class QuoteLoader:
+    def __init__(self):
+        self.loader = QuoteLoader()
+        self.latest_quotes = {}
 
-    def __enter__(self):
-        self.latest_quotes = self.fetch()
-        return self
+    def latest_quote(self, symbol) -> Coin:
+            return self.latest_quotes.get(symbol.upper(), None)
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+    def updated_quotes(self) -> Generator[Coin, None, None]:
 
-    def latest(self, symbol):
-        return self.latest_quotes.get(symbol.upper(), None)
+        for fetch in self.loader.fetch():
 
-    @staticmethod
-    def fetch():
-        response = requests.get("https://api.coinmarketcap.com/v1/ticker/")
-
-        if response.status_code == 200:
-            return {c.symbol.upper(): c for c in map(Coin, response.json())}
-        else:
-            logging.error("Wrong status code received: %d", response.status_code)
-            return []
-
-    def diff(self):
-
-        for fetch in self.fetch().values():
-
-            latest = self.latest_quotes.get(fetch.symbol, None)
+            latest = self.latest_quote(fetch.symbol)
 
             if fetch.is_newer(latest):
                 self.latest_quotes[fetch.symbol] = fetch
                 yield fetch
 
 
-class LoadScheduler(Thread):
+class QuoteLoader:
 
-    def __init__(self, interval, loader, callback):
-        Thread.__init__(self)
-        self.stopped = Event()
-        self.interval = interval
-        self.callback = callback
-        self.setDaemon(True)
-        self.loader = loader
+    @staticmethod
+    def fetch() -> [Coin]:
+        response = requests.get("https://api.coinmarketcap.com/v1/ticker/")
 
-    def stop(self):
-        self.stopped.set()
-
-    def run(self):
-
-        while not self.stopped.wait(self.interval):
-
-            logging.debug("Updating quotes")
-
-            for q in self.loader.diff():
-                self.callback(q)
-
-            logging.debug("Update terminated")
+        if response.status_code == 200:
+            return map(Coin, response.json())
+        else:
+            logging.error("Wrong status code received: %d", response.status_code)
+            return []

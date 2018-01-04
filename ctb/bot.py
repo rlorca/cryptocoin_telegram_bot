@@ -5,7 +5,9 @@ from telegram.ext import CommandHandler, Updater
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 class Subscribers:
-
+    """
+    Class that keep track of coin subscriptions.
+    """
     def __init__(self):
         self._subscribers = {}
         self.empty = frozenset()
@@ -14,28 +16,30 @@ class Subscribers:
 
         symbol_sub = self._subscribers.get(symbol, None)
 
+        # creates a new set of subscribers
         if not symbol_sub:
             symbol_sub = set()
             self._subscribers[symbol] = symbol_sub
 
         symbol_sub.add(user_id)
 
-    def for_symbol(self, symbol):
-
-        return self._subscribers.get(symbol, self.empty)
-
     def remove(self, symbol, user_id):
 
-        symbol_sub = self._subscribers.get(symbol, None)
+        symbol_sub = self._subscribers.get(symbol, self.empty)
 
-        if symbol_sub and id in symbol_sub:
+        if id in symbol_sub:
             symbol_sub.remove(user_id)
             return True
 
-class QuoteBot:
+    def for_symbol(self, symbol):
+        yield from self._subscribers.get(symbol, self.empty)
 
-    def __init__(self, token, loader):
-        self.loader = loader
+class QuoteBot:
+    """
+    Class responsible for communication with Telegram.
+    """
+    def __init__(self, token, quote_service):
+        self.quote_service = quote_service
         self.updater = Updater(token=token)
         self.subscriptions = Subscribers()
 
@@ -48,6 +52,9 @@ class QuoteBot:
 
         dp.add_error_handler(self.error)
 
+        # schedule quote update
+        self.updater.job_queue.run_repeating(self.update, 60)
+
         self.updater.start_polling()
 
         logging.info("Started telegram polling")
@@ -57,8 +64,21 @@ class QuoteBot:
         self.updater.stop()
         logging.info("Telegram terminated")
 
+    def update(self, _bot , _queue):
+        for q in self.quote_service.updated_quotes():
+            msg = self.format_quote(q)
+            for chat in self.subscriptions.for_symbol(q.symbol):
+                self.updater.bot.send_message(chat_id=chat, text=msg)
+
     def listen(self):
         self.updater.idle()
+
+    def quote(self, _, update, args):
+
+        symbol = args[0]
+        quote = self.quote_service.latest_quote(symbol)
+        msg = self.format_quote(quote) if quote else f"Coin '{symbol}' not found"
+        update.message.reply_text(msg)
 
     def follow(self, bot, update, args):
 
@@ -70,7 +90,7 @@ class QuoteBot:
                       update.effective_chat.id,
                       symbol)
 
-        quote = self.loader.latest(symbol)
+        quote = self.quote_service.latest_quote(symbol)
 
         if quote:
             self.subscriptions.add(symbol, chat_id)
@@ -79,13 +99,6 @@ class QuoteBot:
         else:
             msg = f"Coin {symbol} unknown"
 
-        update.message.reply_text(msg)
-
-    def quote(self, _, update, args):
-
-        symbol = args[0]
-        quote = self.loader.latest(symbol)
-        msg = self.format_quote(quote) if quote else f"Coin '{symbol}' not found"
         update.message.reply_text(msg)
 
     def unfollow(self, _, update, args):
@@ -111,8 +124,8 @@ class QuoteBot:
         update.message.reply_text(msg)
 
     @staticmethod
-    def error(update, error):
-        logging.error("Error detected in chat %d: %s", update.effective_chat.id, error)
+    def error(bot, update, error):
+        logging.error("Error detected in chat: %s", error)
 
     @staticmethod
     def format_quote(quote):
@@ -121,10 +134,3 @@ class QuoteBot:
                f"$ {quote.price_usd} " \
                f"1h:{quote.percent_change_1h}% " \
                f"24h:{quote.percent_change_24h}%"
-
-    def run(self, quote):
-
-        msg = self.format_quote(quote)
-
-        for chat in self.subscriptions.for_symbol(quote.symbol):
-            self.updater.bot.send_message(chat_id=chat, text=msg)
