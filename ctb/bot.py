@@ -27,8 +27,8 @@ class Subscribers:
 
         symbol_sub = self._subscribers.get(symbol, self.empty)
 
-        if id in symbol_sub:
-            symbol_sub.remove(user_id)
+        if user_id in symbol_sub:
+            symbol_sub.discard(user_id)
             return True
 
     def for_symbol(self, symbol):
