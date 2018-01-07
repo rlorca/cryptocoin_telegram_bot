@@ -5,16 +5,29 @@ import requests
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
+class Symbol:
+    def __init__(self, str):
+        self.value = str.upper()
+
+    def __str__(self):
+        return self.value
+
+    def __eq__(self, other):
+        return other and self.value == other.value
+
+    def __hash__(self):
+        return hash(self.value)
+
 
 class Coin(object):
     def __init__(self, values):
         self.values = values
+        self.symbol = Symbol(values["symbol"])
 
     def __getattr__(self, item):
         return object.__getattribute__(self, "values")[item]
 
     def is_newer(self, other):
-
         return not other or \
                int(self.last_updated) > int(other.last_updated)
 
@@ -24,8 +37,8 @@ class QuoteService:
         self.loader = QuoteLoader()
         self.latest_quotes = {}
 
-    def latest_quote(self, symbol) -> Coin:
-            return self.latest_quotes.get(symbol.upper(), None)
+    def latest_quote(self, symbol: Symbol) -> Coin:
+            return self.latest_quotes.get(symbol, None)
 
     def updated_quotes(self) -> Generator[Coin, None, None]:
 

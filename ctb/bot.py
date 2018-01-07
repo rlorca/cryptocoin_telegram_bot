@@ -2,6 +2,8 @@ import logging
 
 from telegram.ext import CommandHandler, Updater
 
+from ctb.quote import Symbol
+
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 class Subscribers:
@@ -12,7 +14,7 @@ class Subscribers:
         self._subscribers = {}
         self.empty = frozenset()
 
-    def add(self, symbol, user_id):
+    def add(self, symbol: Symbol, user_id: str):
 
         symbol_sub = self._subscribers.get(symbol, None)
 
@@ -23,7 +25,7 @@ class Subscribers:
 
         symbol_sub.add(user_id)
 
-    def remove(self, symbol, user_id):
+    def remove(self, symbol: Symbol, user_id: str):
 
         symbol_sub = self._subscribers.get(symbol, self.empty)
 
@@ -31,7 +33,7 @@ class Subscribers:
             symbol_sub.discard(user_id)
             return True
 
-    def for_symbol(self, symbol):
+    def for_symbol(self, symbol: Symbol):
         yield from self._subscribers.get(symbol, self.empty)
 
 class QuoteBot:
@@ -75,14 +77,14 @@ class QuoteBot:
 
     def quote(self, _, update, args):
 
-        symbol = args[0]
+        symbol = Symbol(args[0])
         quote = self.quote_service.latest_quote(symbol)
         msg = self.format_quote(quote) if quote else f"Coin '{symbol}' not found"
         update.message.reply_text(msg)
 
     def follow(self, bot, update, args):
 
-        symbol = args[0].upper()
+        symbol = Symbol(args[0])
         chat_id = update.effective_chat.id
 
         logging.debug("User %s from chat %s is now following %s",
@@ -103,7 +105,7 @@ class QuoteBot:
 
     def unfollow(self, _, update, args):
 
-        symbol = args[0]
+        symbol = Symbol(args[0])
         chat_id = update.effective_chat.id
 
         if self.subscriptions.remove(symbol, chat_id):
