@@ -22,3 +22,6 @@ install:
 script:
   - pytest -v
   - pytest --cov  .
+
+after_success:
+  - coverage xml
