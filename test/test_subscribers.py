@@ -1,16 +1,16 @@
+from functools import reduce
 from unittest import TestCase
 
-from ctb.bot import Subscribers, Symbol
+from ctb.bot import Subscribers, CoinSymbol
 
 
 class TestSubscribers(TestCase):
 
     def setUp(self):
         self.subscribers = Subscribers()
-        self.btc = Symbol("btc")
-        self.bnb = Symbol("bnb")
-        self.doge = Symbol("doge")
-
+        self.btc = CoinSymbol("btc")
+        self.bnb = CoinSymbol("bnb")
+        self.doge = CoinSymbol("doge")
 
     def test_successfull_removal(self):
         self.subscribers.add(self.btc, "bob")
@@ -28,30 +28,24 @@ class TestSubscribers(TestCase):
         self.subscribers.add(self.bnb, "bob")
         self.subscribers.add(self.btc, "alice")
 
-        btc = self.collect_subscribers(self.btc)
+        self.assertSetEqual(set(["bob", "alice"]),
+                            self.collect_subscribers(self.btc))
 
-        self.assertSetEqual(set(["bob", "alice"]), btc)
+        self.assertSetEqual(set(["bob"]),
+                            self.collect_subscribers(self.bnb))
 
-        bnb = self.collect_subscribers(self.bnb)
-
-        self.assertSetEqual(set(["bob"]), bnb)
-
-        doge = self.collect_subscribers(self.doge)
-
-        self.assertSetEqual(set(), doge)
-
-
+        self.assertSetEqual(set(),
+                            self.collect_subscribers(self.doge))
 
     def collect_subscribers(self, symbol):
 
-        result = set()
+        def add(acc, it):
+            acc.add(it)
+            return acc
 
-        for x in self.subscribers.for_symbol(symbol):
-            result.add(x)
-
-        return result
-
-
+        return reduce(add,
+                      self.subscribers.for_symbol(symbol),
+                      set())
 
 
 
