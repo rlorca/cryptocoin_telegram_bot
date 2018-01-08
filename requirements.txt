@@ -3,3 +3,8 @@ requests
 
 # used for telegram integration
 python-telegram-bot
+
+
+# for coverage verification
+coverage
+pytest-cov
