@@ -41,35 +41,7 @@ class CoinQuote(object):
                int(self.last_updated) > int(other.last_updated)
 
 
-class QuoteService:
-
-    def __init__(self):
-        self.loader = QuoteLoader()
-        self.latest_quotes = {}
-
-    def coins_available(self) -> Set[CoinSymbol]:
-        return self.latest_quotes.keys()
-
-    def latest_quote(self, symbol: CoinSymbol) -> CoinQuote:
-        """
-        Get latest quote for a given coin.
-        """
-        return self.latest_quotes.get(symbol, None)
-
-    def updated_quotes(self) -> Generator[CoinQuote, None, None]:
-        """
-        Get the quotes that were updated since the last call.
-        """
-        for fetch in self.loader.fetch():
-
-            latest = self.latest_quote(fetch.symbol)
-
-            if fetch.is_newer(latest):
-                self.latest_quotes[fetch.symbol] = fetch
-                yield fetch
-
-
-class QuoteLoader:
+class QuoteFetcher:
 
     @staticmethod
     def fetch() -> [CoinQuote]:
@@ -83,3 +55,31 @@ class QuoteLoader:
         else:
             logging.error("Wrong status code received: %d", response.status_code)
             return []
+
+
+class QuoteService:
+
+    def __init__(self, fetcher=QuoteFetcher.fetch):
+        self._fetcher = fetcher
+        self._latest_quotes = {}
+
+    def coins_available(self) -> Set[CoinSymbol]:
+        return self._latest_quotes.keys()
+
+    def latest_quote(self, symbol: CoinSymbol) -> CoinQuote:
+        """
+        Get latest quote for a given coin.
+        """
+        return self._latest_quotes.get(symbol, None)
+
+    def updated_quotes(self) -> Generator[CoinQuote, None, None]:
+        """
+        Get the quotes that were updated since the last call.
+        """
+        for fetch in self._fetcher():
+
+            latest = self.latest_quote(fetch.symbol)
+
+            if fetch.is_newer(latest):
+                self._latest_quotes[fetch.symbol] = fetch
+                yield fetch

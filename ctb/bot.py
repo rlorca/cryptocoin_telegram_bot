@@ -1,11 +1,8 @@
 import logging
 
-from telegram.ext import CommandHandler, Updater
-
 from ctb.quote import CoinSymbol
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
-
 
 class Subscribers:
     """
