@@ -20,4 +20,4 @@ install:
   - pip install -U -r requirements.txt
 
 script:
-  - pytest -v -m nocoverage
+  - pytest -v
