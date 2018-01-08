@@ -1,0 +1,23 @@
+language: python
+python:
+  - "3.6"
+
+dist: trusty
+sudo: false
+
+branches:
+  only:
+    - master
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+before_cache:
+  - rm -f $HOME/.cache/pip/log/debug.log
+
+install:
+  - pip install -U -r requirements.txt
+
+script:
+  - pytest -v -m nocoverage
