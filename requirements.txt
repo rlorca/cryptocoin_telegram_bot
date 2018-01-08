@@ -8,3 +8,6 @@ python-telegram-bot
 # for coverage verification
 coverage
 pytest-cov
+
+# codacy coverage integration
+codacy-coverage
