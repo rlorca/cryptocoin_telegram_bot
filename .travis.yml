@@ -1,24 +1,31 @@
 language: python
 python:
 - '3.6'
+
 dist: trusty
 sudo: false
 branches:
   only:
   - master
+
 cache:
   directories:
   - "$HOME/.cache/pip"
+
 before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
+
 install:
 - pip install -U -r requirements.txt
+
 script:
 - pytest -v
 - pytest --cov  .
+
 after_success:
 - coverage xml
 - python-codacy-coverage -r coverage.xml
+
 notifications:
   slack:
     secure: YdcWU3g28ohR/Ar8sSKlpkNq3pzHDWOTuWSOxo42khsNfMv1EhDD+1sdcJEhQSfG7WF6aeNoJzec4SQHEq4zpytJxZ5fBVW2M4QGLsBLfKp8JA29dzmmeS3RSyI7wMEF8BdwS2hp0Ft3FWymXYBVvHrBbHye1xxgONyp4bKkXHQDj3G271ZMDgX0F0ASAK9blt8+III5ybB6rYa4jespKBVZ6AVzS3WUjZgF8D8yjNxF2SCf+3rfVbU9w0gU9SwOeA56a5JrmaQn7XtoA5R+qxH++1U03OPeUI0dyuMMgWuAqbbeMgqY+39viFTItG4iuJD4VZEcJPuiwwxvjQ1kjK35FkXGiSdM7IM0l1YkNY5E3TjYnCjjmXtvGg/SggDjFYk69xZdVe9CpyInbI7NIxDKMzTFyHRq6bLwPC+x+joCIw3Xwd2WzVlvEAQ3TTJPwUzABasjJkbQqq9LdqzwkAoJERID0t7c1xznNBuGVXlJRJbyfLhJT9+HB2JTsD0NnVZNzLNNhVCvu/2IqP8PW7spB/A2RkPUQLnuagbMZxR6fSvNKcRgudJO7LOlQ9Qbk/4lkmTzfqxk87zFje/nepSjYwaX06nAPkldIgWz5/vZe0zH84qe8S2H3DVnmXyf4N5EWA9AzsKqk/YM6xp6RwZ4OklpoyoldtAOt3JS/4w=
