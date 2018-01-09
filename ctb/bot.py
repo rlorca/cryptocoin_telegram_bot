@@ -1,5 +1,7 @@
 import logging
 
+from telegram.ext import CommandHandler, Updater
+
 from ctb.quote import CoinSymbol
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -32,6 +34,9 @@ class Subscribers:
             symbol_sub.discard(user_id)
             return True
 
+        return False
+
+
     def for_symbol(self, symbol: CoinSymbol):
         yield from self._subscribers.get(symbol, self.empty)
 
@@ -47,14 +52,14 @@ class QuoteBot:
         self.subscriptions = Subscribers()
 
     def __enter__(self):
-        dp = self.updater.dispatcher
-        dp.add_handler(CommandHandler("follow", self.command_follow, pass_args=True))
-        dp.add_handler(CommandHandler("unfollow", self.command_unfollow, pass_args=True))
-        dp.add_handler(CommandHandler("quote", self.command_quote, pass_args=True))
-        dp.add_handler(CommandHandler("help", self.command_help))
-        dp.add_handler(CommandHandler("list", self.command_list_coins))
+        dispatcher = self.updater.dispatcher
+        dispatcher.add_handler(CommandHandler("follow", self.command_follow, pass_args=True))
+        dispatcher.add_handler(CommandHandler("unfollow", self.command_unfollow, pass_args=True))
+        dispatcher.add_handler(CommandHandler("quote", self.command_quote, pass_args=True))
+        dispatcher.add_handler(CommandHandler("help", self.command_help))
+        dispatcher.add_handler(CommandHandler("list", self.command_list_coins))
 
-        dp.add_error_handler(self.error)
+        dispatcher.add_error_handler(self.error)
 
         # schedule quote update
         self.updater.job_queue.run_repeating(self.scheduler_callback, 60)
@@ -74,11 +79,11 @@ class QuoteBot:
         """
 
         # retrieve all quotes that were updated
-        for q in self.quote_service.updated_quotes():
-            msg = self.format_quote(q)
+        for quote in self.quote_service.updated_quotes():
+            msg = self.format_quote(quote)
 
             # notify all chats subscribed
-            for chat in self.subscriptions.for_symbol(q.symbol):
+            for chat in self.subscriptions.for_symbol(quote.symbol):
                 self.updater.bot.send_message(chat_id=chat, text=msg)
 
     def listen(self):
@@ -95,7 +100,7 @@ class QuoteBot:
         msg = self.format_quote(quote) if quote else f"Coin '{symbol}' not found"
         update.message.reply_text(msg)
 
-    def command_follow(self, bot, update, args):
+    def command_follow(self, _bot, update, args):
 
         if len(args) != 1:
             update.message.reply_text("Wrong command format. Usage\n/follow $symbol")
@@ -114,7 +119,8 @@ class QuoteBot:
         if quote:
             self.subscriptions.add(symbol, chat_id)
 
-            msg = f"You are now receiving updates for {symbol} - {quote.name}\n" + self.format_quote(quote)
+            msg = f"You are now receiving updates for {symbol} - {quote.name}\n" + \
+                  self.format_quote(quote)
         else:
             msg = f"Coin {symbol} unknown"
 
@@ -140,7 +146,9 @@ class QuoteBot:
 
         coins = self.quote_service.coins_available()
 
-        msg = f"Coins available: {len(coins)}\n" + "\n".join(str(c) for c in self.quote_service.coins_available())
+        msg = f"Coins available: {len(coins)}\n"
+        msg += "\n".join(str(c) for c in self.quote_service.coins_available())
+
         update.message.reply_text(msg)
 
 
@@ -156,7 +164,7 @@ class QuoteBot:
         update.message.reply_text(msg)
 
     @staticmethod
-    def error(bot, update, error):
+    def error(_bot, _update, error):
         logging.error("Error detected in chat: %s", error)
 
     @staticmethod

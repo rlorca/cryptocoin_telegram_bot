@@ -1,10 +1,13 @@
+"""
+Coin-related services and types.
+"""
+
 import logging
 from typing import Generator, Set
 
 import requests
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
-
 
 class CoinSymbol:
     """
@@ -52,9 +55,9 @@ class QuoteFetcher:
 
         if response.status_code == 200:
             return map(CoinQuote, response.json())
-        else:
-            logging.error("Wrong status code received: %d", response.status_code)
-            return []
+
+        logging.error("Wrong status code received: %d", response.status_code)
+        return []
 
 
 class QuoteService:
